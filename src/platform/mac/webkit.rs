@@ -38,8 +38,8 @@ impl WebView {
     pub fn new(window: *mut ::std::os::raw::c_void) -> Result<Self, String> {
         unsafe {
 
-            // WKWebViewConfiguration
-            let cls = Class::get("WKWebViewConfiguration").expect("WKWebViewConfiguration to exist");
+            // WKWebViewConfiguration;
+            let cls = Class::get("WKWebViewConfiguration").ok_or("WKWebViewConfiguration does not exist")?;
             let configuration = {
                 let obj: *mut Object = msg_send![cls, alloc];
                 let obj: *mut Object = msg_send![obj, init];
@@ -50,7 +50,7 @@ impl WebView {
             let window_frame = NSView::frame(view as id);
 
             // WKWebView
-            let cls = Class::get("WKWebView").expect("WKWebView to exist");
+            let cls = Class::get("WKWebView").ok_or("WKWebView does not exist")?;
             let webview = {
                 let obj: *mut Object = msg_send![cls, alloc];
                 let obj: *mut Object = msg_send![obj,
@@ -68,9 +68,9 @@ impl WebView {
         }
     }
 
-    pub fn load_html_string(&mut self, html: &str) {
+    pub fn load_html_string(&mut self, html: &str) -> Result<(), String> {
         unsafe {
-            let cls = Class::get("NSURL").unwrap();
+            let cls = Class::get("NSURL").ok_or("NSURL does not exist")?;
             let nsurl = {
                 let obj: *mut Object = msg_send![cls, fileURLWithPath:NSString::alloc(nil).init_str("")];
                 obj
@@ -83,5 +83,6 @@ impl WebView {
             msg_send![self.id, setOpaque:NO];
             // msg_send![self.id, setBackgroundColor:Color::clear().nscolor()];
         }
+        Ok(())
     }
 }

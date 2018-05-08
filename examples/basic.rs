@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 extern crate webview;
 extern crate winit;
 
@@ -9,12 +11,15 @@ fn main() {
     let mut events_loop = winit::EventsLoop::new();
     let window = winit::Window::new(&events_loop).unwrap();
 
-    run(
+    match run(
         unsafe { window.platform_window() as *mut ::std::os::raw::c_void },
         CONTENT,
         || { println!("init") },
         || { println!("event") },
-    );
+    ) {
+        Ok(_) => println!("done."),
+        Err(e) => println!("error: {}", e),
+    }
 
     events_loop.run_forever(|event| {
         match event {
@@ -25,6 +30,4 @@ fn main() {
             _ => winit::ControlFlow::Continue,
         }
     });
-
-    println!("done.");
 }
