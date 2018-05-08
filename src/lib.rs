@@ -19,3 +19,7 @@ pub fn run<
 
     Ok(())
 }
+
+pub fn send_event(target: *mut c_void, event: String) {
+    println!("event: {:?}", event);
+}

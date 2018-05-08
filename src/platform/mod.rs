@@ -7,3 +7,6 @@ pub mod platform;
 #[cfg(target_os = "windows")]
 #[path="win/mod.rs"]
 pub mod platform;
+
+#[cfg(target_os = "linux")]
+panic!("library not supported on linux");
