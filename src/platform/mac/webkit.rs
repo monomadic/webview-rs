@@ -168,12 +168,22 @@ impl WebView {
             NSView::addSubview_(view, webview);
             // NSWindow::addView_(window as id, webview);
 
-            let mut webview = WebView {
+            let mut w = WebView {
                 id: webview
             };
-            let _ = webview.load_html_string(content);
+            let _ = w.load_html_string(content);
 
 
+            // ==
+            // set instance variable to boxed pointer of rust webview object.
+
+            let boxed_webview = Box::new(w);
+            let webview_ptr = Box::into_raw(boxed_webview) as *const WebView as *mut c_void;
+            // msg_send![webview, setEventHandler: webview_ptr];
+            let obj = &mut *(webview);
+            obj.set_ivar("WebView", webview_ptr);
+
+            // ==
 
             Ok(())
         }
