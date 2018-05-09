@@ -63,6 +63,27 @@ pub fn wk_script_message_handler_class() -> &'static Class {
     Class::get("NotificationScriptMessageHandler").expect("NotificationScriptMessageHandler to be valid.")
 }
 
+pub fn custom_wkwebview_class() -> *const Class {
+    use std::sync::{Once, ONCE_INIT};
+
+    static mut RESPONDER_CLASS: *const Class = 0 as *const Class;
+    static INIT: Once = ONCE_INIT;
+
+    INIT.call_once(|| {
+
+        // WKWebView
+        let superclass = Class::get("WKWebView").expect("WKWebView does not exist");
+        let mut decl = ClassDecl::new("CustomWKWebView", superclass).unwrap();
+
+        decl.add_ivar::<*mut c_void>("WebView");
+
+        unsafe {
+            RESPONDER_CLASS = decl.register();
+        }
+    });
+    unsafe { RESPONDER_CLASS }
+}
+
 pub fn navigation_delegate_class() -> &'static Class {
     use std::sync::{Once, ONCE_INIT};
 
@@ -94,7 +115,7 @@ pub fn navigation_delegate_class() -> &'static Class {
 }
 
 impl WebView {
-    pub fn new(window: *mut ::std::os::raw::c_void) -> Result<Self, String> {
+    pub fn new<CB: FnOnce()>(window: *mut ::std::os::raw::c_void, content: &str, event_callback: CB) -> Result<(), String> {
         unsafe {
 
             // WKUserContentController
@@ -120,7 +141,12 @@ impl WebView {
             let window_frame = NSView::frame(view as id);
             
             // WKWebView
-            let cls = Class::get("WKWebView").ok_or("WKWebView does not exist")?;
+            // let cls = Class::get("WKWebView").ok_or("WKWebView does not exist")?;
+            // let mut decl = ClassDecl::new("CustomWebView", cls).unwrap();
+            // decl.add_ivar::<*mut c_void>("ViewController");
+
+            let cls = custom_wkwebview_class();
+
             let webview = {
                 let obj: *mut Object = msg_send![cls, alloc];
                 let obj: *mut Object = msg_send![obj,
@@ -128,6 +154,7 @@ impl WebView {
                     configuration: configuration ];
                 obj
             };
+            println!("WKWebView: {:?}", webview);
 
             // WKNavigationDelegate
             let cls = navigation_delegate_class();
@@ -141,9 +168,14 @@ impl WebView {
             NSView::addSubview_(view, webview);
             // NSWindow::addView_(window as id, webview);
 
-            Ok(WebView {
+            let mut webview = WebView {
                 id: webview
-            })
+            };
+            let _ = webview.load_html_string(content);
+
+
+
+            Ok(())
         }
     }
 

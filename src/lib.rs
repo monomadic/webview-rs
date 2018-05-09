@@ -11,15 +11,14 @@ pub fn run<
     CB: FnOnce(),
     > (handle: *mut c_void, content: &str, init_callback: ICB, event_callback: CB) -> Result<(), String> {
 
-    let mut webview = platform::WebView::new(handle).unwrap();
-    let _ = webview.load_html_string(content);
+    let mut webview = platform::WebView::new(handle, content, event_callback).unwrap();
+    // let _ = webview.load_html_string(content);
 
     init_callback();
-    event_callback();
 
     Ok(())
 }
 
 pub fn send_event(target: *mut c_void, event: String) {
-    println!("event: {:?}", event);
+    println!("  target: {:?} event: {:?}", target, event);
 }
