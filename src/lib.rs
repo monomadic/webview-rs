@@ -2,23 +2,20 @@
 extern crate cocoa;
 
 mod platform;
-// pub use platform::*;
+pub use platform::*;
 
 use std::os::raw::c_void;
 
 pub fn run<
-    ICB: FnOnce(),
-    CB: FnOnce(),
+    ICB: FnOnce(WebView),
+    CB: 'static + FnMut(WebView),
     > (handle: *mut c_void, content: &str, init_callback: ICB, event_callback: CB) -> Result<(), String> {
 
-    let mut webview = platform::WebView::new(handle, content, event_callback).unwrap();
+    platform::WebView::new(handle, content, init_callback, event_callback).unwrap();
     // let _ = webview.load_html_string(content);
 
-    init_callback();
+    // init_callback();
 
     Ok(())
 }
 
-pub fn send_event(target: *mut c_void, event: String) {
-    println!("  target: {:?} event: {:?}", target, event);
-}

@@ -19,9 +19,27 @@ extern {
     pub static WKScriptMessageHandler: id;
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct WebView {
-    id: id,
+    pub id: id,
+}
+
+
+pub struct Callback {
+    pub event_callback: Box<FnMut(WebView)>,
+}
+
+pub fn send_event(target: id, event: String) {
+    // println!("  target: {:?} event: {:?}", target, event);
+
+    let webview_ptr: *mut c_void = unsafe { *(*target).get_ivar("WebView") };
+    let webview: Box<WebView> = unsafe { Box::from_raw(webview_ptr as *mut WebView) };
+
+    let callback_ptr: *mut c_void = unsafe { *(*target).get_ivar("Callback") };
+    let mut ecb: Box<Box<Callback>> = unsafe { Box::from_raw(callback_ptr as *mut Box<Callback>) };
+    ((*ecb).event_callback)(*webview);
+
+    ::std::mem::forget(ecb); // forget this memory so the id isn't deleted!
 }
 
 fn nsstring_to_str(string: id) -> String {
@@ -49,7 +67,7 @@ pub fn wk_script_message_handler_class() -> &'static Class {
             let body = nsstring_to_str(unsafe { msg_send![message, body] });
 
             let webview = unsafe { msg_send![message, webView] };
-            ::send_event(webview, format!("name: {}, body: {}", name, body));
+            send_event(webview, format!("name: {}, body: {}", name, body));
         }
 
         unsafe {
@@ -76,6 +94,7 @@ pub fn custom_wkwebview_class() -> *const Class {
         let mut decl = ClassDecl::new("CustomWKWebView", superclass).unwrap();
 
         decl.add_ivar::<*mut c_void>("WebView");
+        decl.add_ivar::<*mut c_void>("Callback");
 
         unsafe {
             RESPONDER_CLASS = decl.register();
@@ -95,10 +114,11 @@ pub fn navigation_delegate_class() -> &'static Class {
         decl.add_protocol(Protocol::get("WKNavigationDelegate").expect("WKNavigationDelegate protocol to exist"));
 
         extern fn didCommitNavigation(this: &Object, _cmd: Sel, webview: id, navigation: id) {
-            ::send_event(webview as *mut c_void, "commit nav".to_string());
+            // send_event(webview as *mut c_void, "commit nav".to_string());
+            send_event(webview, "commit nav".to_string());
         }
         extern fn didFinishNavigation(this: &Object, _cmd: Sel, webview: id, navigation: id) {
-            ::send_event(webview as *mut c_void, "finished loading".to_string());
+            send_event(webview, "finished loading".to_string());
         }
 
         unsafe {
@@ -115,7 +135,7 @@ pub fn navigation_delegate_class() -> &'static Class {
 }
 
 impl WebView {
-    pub fn new<CB: FnOnce()>(window: *mut ::std::os::raw::c_void, content: &str, event_callback: CB) -> Result<(), String> {
+    pub fn new<CB: 'static + FnMut(WebView), ICB: FnOnce(WebView)>(window: *mut ::std::os::raw::c_void, content: &str, init_callback: ICB, event_callback: CB) -> Result<(), String> {
         unsafe {
 
             // WKUserContentController
@@ -169,19 +189,27 @@ impl WebView {
             // NSWindow::addView_(window as id, webview);
 
             let mut w = WebView {
-                id: webview
+                id: webview,
+                // event_callback: Box::new(event_callback),
             };
             let _ = w.load_html_string(content);
 
+            // get an Object version of the webview.
+            let obj = &mut *(webview);
 
             // ==
             // set instance variable to boxed pointer of rust webview object.
-
-            let boxed_webview = Box::new(w);
-            let webview_ptr = Box::into_raw(boxed_webview) as *const WebView as *mut c_void;
-            // msg_send![webview, setEventHandler: webview_ptr];
-            let obj = &mut *(webview);
+            let boxed_webview = Box::new(w.clone());
+            let webview_ptr = Box::into_raw(boxed_webview) as *const _ as *mut c_void;
             obj.set_ivar("WebView", webview_ptr);
+
+            // ==
+            // save the callback
+            let boxed_cb:Box<Box<Callback>> = Box::new(Box::new(Callback{ event_callback: Box::new(event_callback) }));
+            let boxed_cb_ptr = Box::into_raw(boxed_cb) as *mut Box<Callback> as *mut c_void;
+            obj.set_ivar("Callback", boxed_cb_ptr);
+
+            ::std::mem::forget(boxed_cb_ptr);
 
             // ==
 
