@@ -24,12 +24,11 @@ pub struct WebView {
     pub id: id,
 }
 
-
 pub struct Callback {
-    pub event_callback: Box<FnMut(WebView)>,
+    pub event_callback: Box<FnMut(WebView, String, String)>,
 }
 
-pub fn send_event(target: id, event: String) {
+pub fn send_event(target: id, name: String, body: String) {
     // println!("  target: {:?} event: {:?}", target, event);
 
     let webview_ptr: *mut c_void = unsafe { *(*target).get_ivar("WebView") };
@@ -37,7 +36,7 @@ pub fn send_event(target: id, event: String) {
 
     let callback_ptr: *mut c_void = unsafe { *(*target).get_ivar("Callback") };
     let mut ecb: Box<Box<Callback>> = unsafe { Box::from_raw(callback_ptr as *mut Box<Callback>) };
-    ((*ecb).event_callback)(*webview);
+    ((*ecb).event_callback)(*webview, name, body);
 
     ::std::mem::forget(ecb); // forget this memory so the id isn't deleted!
 }
@@ -67,7 +66,7 @@ pub fn wk_script_message_handler_class() -> &'static Class {
             let body = nsstring_to_str(unsafe { msg_send![message, body] });
 
             let webview = unsafe { msg_send![message, webView] };
-            send_event(webview, format!("name: {}, body: {}", name, body));
+            send_event(webview, name, body);
         }
 
         unsafe {
@@ -115,10 +114,10 @@ pub fn navigation_delegate_class() -> &'static Class {
 
         extern fn didCommitNavigation(this: &Object, _cmd: Sel, webview: id, navigation: id) {
             // send_event(webview as *mut c_void, "commit nav".to_string());
-            send_event(webview, "commit nav".to_string());
+            send_event(webview, "commit_navigation".to_string(), "".to_string());
         }
         extern fn didFinishNavigation(this: &Object, _cmd: Sel, webview: id, navigation: id) {
-            send_event(webview, "finished loading".to_string());
+            send_event(webview, "finished loading".to_string(), "".to_string());
         }
 
         unsafe {
@@ -135,7 +134,7 @@ pub fn navigation_delegate_class() -> &'static Class {
 }
 
 impl WebView {
-    pub fn new<CB: 'static + FnMut(WebView), ICB: FnOnce(WebView)>(window: *mut ::std::os::raw::c_void, content: &str, init_callback: ICB, event_callback: CB) -> Result<(), String> {
+    pub fn new<CB: 'static + FnMut(WebView, String, String), ICB: FnOnce(WebView)>(window: *mut ::std::os::raw::c_void, content: &str, init_callback: ICB, event_callback: CB) -> Result<(), String> {
         unsafe {
 
             // WKUserContentController

@@ -5,7 +5,14 @@ extern crate winit;
 
 use webview::*;
 
-const CONTENT: &'static str = "<html><body>hi</body></html>";
+const CONTENT: &'static str = "
+<html>
+    <body>
+        <button style='width: 150px' onclick=\"window.webkit.messageHandlers.notification.postMessage('hello there');\">
+            PRESS ME
+        </button>
+    </body>
+</html>";
 
 fn main() {
     let mut events_loop = winit::EventsLoop::new();
@@ -16,7 +23,7 @@ fn main() {
         unsafe { window.platform_window() as *mut ::std::os::raw::c_void },
         CONTENT,
         move |webview| { println!("--init {} {:?}", msg, webview.id) },
-        move |webview| { println!("--event {}", msg) },
+        move |webview, name, body| { println!("--event {} {} {}", msg, name, body) },
     ){
         Ok(_) => println!("done."),
         Err(e) => println!("error: {}", e),
