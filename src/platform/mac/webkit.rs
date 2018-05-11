@@ -29,8 +29,6 @@ pub struct Callback {
 }
 
 pub fn send_event(target: id, name: String, body: String) {
-    // println!("  target: {:?} event: {:?}", target, event);
-
     let webview_ptr: *mut c_void = unsafe { *(*target).get_ivar("WebView") };
     let webview: Box<WebView> = unsafe { Box::from_raw(webview_ptr as *mut WebView) };
 
@@ -158,11 +156,6 @@ impl WebView {
 
             let view = NSWindow::contentView(window as id);
             let window_frame = NSView::frame(view as id);
-            
-            // WKWebView
-            // let cls = Class::get("WKWebView").ok_or("WKWebView does not exist")?;
-            // let mut decl = ClassDecl::new("CustomWebView", cls).unwrap();
-            // decl.add_ivar::<*mut c_void>("ViewController");
 
             let cls = custom_wkwebview_class();
 
@@ -173,7 +166,6 @@ impl WebView {
                     configuration: configuration ];
                 obj
             };
-            println!("WKWebView: {:?}", webview);
 
             // WKNavigationDelegate
             let cls = navigation_delegate_class();
