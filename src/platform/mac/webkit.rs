@@ -28,13 +28,14 @@ pub struct Callback {
     pub event_callback: Box<FnMut(WebView, String, String)>,
 }
 
-pub fn send_event(target: id, name: String, body: String) {
-    let webview_ptr: *mut c_void = unsafe { *(*target).get_ivar("WebView") };
-    let webview: Box<WebView> = unsafe { Box::from_raw(webview_ptr as *mut WebView) };
+pub fn send_event(target: id, name: String, msg: String) {
+    // let webview_ptr: *mut c_void = unsafe { *(*target).get_ivar("WebView") };
+    // let webview: Box<WebView> = unsafe { Box::from_raw(webview_ptr as *mut WebView) };
 
     let callback_ptr: *mut c_void = unsafe { *(*target).get_ivar("Callback") };
     let mut ecb: Box<Box<Callback>> = unsafe { Box::from_raw(callback_ptr as *mut Box<Callback>) };
-    ((*ecb).event_callback)(*webview, name, body);
+
+    ((*ecb).event_callback)(WebView{ id: target }, name, msg);
 
     ::std::mem::forget(ecb); // forget this memory so the id isn't deleted!
 }
@@ -62,8 +63,8 @@ pub fn wk_script_message_handler_class() -> &'static Class {
         extern fn userContentController(this: &mut Object, _cmd: Sel, didReceive: bool, message: id) {
             let name = nsstring_to_str(unsafe { msg_send![message, name] });
             let body = nsstring_to_str(unsafe { msg_send![message, body] });
-
             let webview = unsafe { msg_send![message, webView] };
+
             send_event(webview, name, body);
         }
 

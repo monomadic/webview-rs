@@ -16,8 +16,7 @@ const CONTENT: &'static str = "
 fn main() {
     let mut events_loop = winit::EventsLoop::new();
     let window = winit::Window::new(&events_loop).unwrap();
-    let msg = "Hello!";
-    let callback = move |_webview, name, body| { println!("--event {} {} {}", msg, name, body) };
+    let callback = move |_webview, name, body| { println!("--event {} {}", name, body) };
 
     match run(
         unsafe { window.platform_window() as *mut ::std::os::raw::c_void },
