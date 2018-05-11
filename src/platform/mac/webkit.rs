@@ -132,7 +132,7 @@ pub fn navigation_delegate_class() -> &'static Class {
 }
 
 impl WebView {
-    pub fn new<CB: 'static + FnMut(WebView, String, String), ICB: FnOnce(WebView)>(window: *mut ::std::os::raw::c_void, content: &str, init_callback: ICB, event_callback: CB) -> Result<(), String> {
+    pub fn new<CB: 'static + FnMut(WebView, String, String)>(window: *mut ::std::os::raw::c_void, content: &str, event_callback: CB) -> Result<(), String> {
         unsafe {
 
             // WKUserContentController

@@ -8,9 +8,8 @@ use webview::*;
 const CONTENT: &'static str = "
 <html>
     <body>
-        <button style='width: 150px' onclick=\"window.webkit.messageHandlers.notification.postMessage('hello there');\">
-            PRESS ME
-        </button>
+        <button style='width: 150px' onclick=\"window.webkit.messageHandlers.notification.postMessage('event 1');\">event 1</button>
+        <button style='width: 150px' onclick=\"window.webkit.messageHandlers.notification.postMessage('event 2');\">event 2</button>
     </body>
 </html>";
 
@@ -18,12 +17,12 @@ fn main() {
     let mut events_loop = winit::EventsLoop::new();
     let window = winit::Window::new(&events_loop).unwrap();
     let msg = "Hello!";
+    let callback = move |_webview, name, body| { println!("--event {} {} {}", msg, name, body) };
 
     match run(
         unsafe { window.platform_window() as *mut ::std::os::raw::c_void },
         CONTENT,
-        move |webview| { println!("--init {} {:?}", msg, webview.id) },
-        move |webview, name, body| { println!("--event {} {} {}", msg, name, body) },
+        callback,
     ){
         Ok(_) => println!("done."),
         Err(e) => println!("error: {}", e),
