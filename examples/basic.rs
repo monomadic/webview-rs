@@ -16,13 +16,15 @@ const CONTENT: &'static str = "
 fn main() {
     let mut events_loop = winit::EventsLoop::new();
     let window = winit::Window::new(&events_loop).unwrap();
-    let callback = move |_webview, name, body| { println!("--event {} {}", name, body) };
+    let callback = move |_webview, name, body:String| {
+        match body.as_str() {
+            "event 1" => println!("event 1!"),
+            _ => println!("--other event {} {}", name, body),
+        };
+    };
+    let window_pointer = unsafe { window.platform_window() as *mut ::std::os::raw::c_void };
 
-    match run(
-        unsafe { window.platform_window() as *mut ::std::os::raw::c_void },
-        CONTENT,
-        callback,
-    ){
+    match run(window_pointer, CONTENT, callback){
         Ok(_) => println!("done."),
         Err(e) => println!("error: {}", e),
     }
