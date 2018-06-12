@@ -11,13 +11,14 @@ const CONTENT: &'static str = "
         <button style='width: 150px' onclick=\"window.webkit.messageHandlers.notification.postMessage('event 1');\">event 1</button>
         <button style='width: 150px' onclick=\"window.webkit.messageHandlers.notification.postMessage('event 2');\">event 2</button>
     </body>
-</html>";
+</html>
+";
 
 fn main() {
     let mut events_loop = winit::EventsLoop::new();
     let window = winit::Window::new(&events_loop).unwrap();
     let callback = move |_webview, name, body:String| {
-        match body.as_str() {
+        match body.as_str() { 
             "event 1" => println!("event 1!"),
             _ => println!("--other event {} {}", name, body),
         };
